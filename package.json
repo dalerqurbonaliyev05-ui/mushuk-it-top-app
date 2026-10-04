@@ -1,0 +1,36 @@
+{
+  "name": "mushuk-it-top-app",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "Mushuk va It Top: mushuk va itlarni suratga olib, joylashuvi bilan e'lon qilish (React + Vite + TypeScript + Capacitor + Supabase)",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc --noEmit && vite build",
+    "typecheck": "tsc --noEmit",
+    "build:test": "VITE_SUPABASE_URL=https://testproj.supabase.co VITE_SUPABASE_ANON_KEY=sb_publishable_testkey123 vite build --outDir dist-test",
+    "preview": "vite preview",
+    "cap:sync": "cap sync android"
+  },
+  "dependencies": {
+    "@capacitor/android": "^6.2.0",
+    "@capacitor/app": "^6.0.2",
+    "@capacitor/browser": "^6.0.5",
+    "@capacitor/camera": "^6.1.2",
+    "@capacitor/core": "^6.2.0",
+    "@capacitor/geolocation": "^6.1.0",
+    "@supabase/supabase-js": "^2.45.0",
+    "leaflet": "^1.9.4",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^6.2.0",
+    "@types/leaflet": "^1.9.12",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.3.3",
+    "typescript": "^5.6.3",
+    "vite": "^5.4.10"
+  }
+}

@@ -1,0 +1,8 @@
+{
+  "name": "mushuk-it-top-app-tests",
+  "private": true,
+  "type": "module",
+  "description": "Ilova e2e sinovi: haqiqiy Chromium + tarmoq darajasida soxta Supabase. Avval ildizda `npm run build:test`, so'ng shu yerda `npm install && npm test`.",
+  "scripts": { "test": "node --test e2e.test.mjs" },
+  "devDependencies": { "playwright-core": "1.56.1" }
+}

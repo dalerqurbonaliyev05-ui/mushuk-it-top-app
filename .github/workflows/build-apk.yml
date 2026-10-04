@@ -1,0 +1,102 @@
+# Android debug APK avtomatik yig'iladi (rele-lugat repodagi workflow asosida):
+#   push / pull_request / qo'lda ishga tushirish -> APK "Artifacts"da (30 kun);
+#   main'ga push -> APK GitHub Release'ga ham yuklanadi (Releases bo'limidan yuklab olinadi).
+#
+# Sozlash (Settings > Secrets and variables > Actions > Variables):
+#   SUPABASE_URL, SUPABASE_ANON_KEY: Supabase loyihangiz (publishable/anon kalit; service_role EMAS).
+name: Build APK
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: build-apk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    env:
+      VITE_SUPABASE_URL: ${{ vars.SUPABASE_URL }}
+      VITE_SUPABASE_ANON_KEY: ${{ vars.SUPABASE_ANON_KEY }}
+    steps:
+      - name: Kodni olish
+        uses: actions/checkout@v4
+
+      - name: Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Java 17 (Temurin)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Supabase sozlamasini tekshirish
+        run: |
+          if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
+            echo "::warning::SUPABASE_URL / SUPABASE_ANON_KEY (Actions Variables) berilmagan: APK 'Supabase sozlanmagan' ekranini ko'rsatadi."
+          fi
+
+      - name: Bog'liqliklarni o'rnatish
+        run: npm ci
+
+      - name: Vite build (tsc + vite build)
+        run: npm run build
+
+      - name: Web fayllarni Android'ga ko'chirish
+        run: npx cap sync android
+
+      - name: Debug APK yig'ish
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew assembleDebug --no-daemon --stacktrace
+
+      - name: APK nomini aniqlash
+        run: |
+          mkdir -p out
+          cp android/app/build/outputs/apk/debug/app-debug.apk out/mushuk-it-top.apk
+          ls -lh out
+
+      - name: APK ni yuklash
+        uses: actions/upload-artifact@v4
+        with:
+          name: mushuk-it-top-apk
+          path: out/mushuk-it-top.apk
+          if-no-files-found: error
+          retention-days: 30
+
+  release:
+    name: GitHub Release
+    needs: build
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: mushuk-it-top-apk
+          path: apk
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          name: APK #${{ github.run_number }}
+          body: |
+            Avtomatik yig'ilgan Android ilovasi (debug APK): `mushuk-it-top.apk`
+            Commit: ${{ github.sha }}
+          files: apk/mushuk-it-top.apk
+          fail_on_unmatched_files: true
