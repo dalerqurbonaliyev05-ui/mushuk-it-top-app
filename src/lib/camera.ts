@@ -17,12 +17,30 @@ export async function takePhoto(): Promise<Blob | null> {
   }
 }
 
+/**
+ * Brauzer va iPhone (Safari): <input type="file" capture> kamerani ochadi (kutubxonadan tanlash ham mumkin).
+ * Safari'ning eski versiyalarida "cancel" hodisasi yo'q, shuning uchun oyna yopilib sahifaga fokus qaytgach
+ * fayl tanlanmagan bo'lsa ham null qaytaramiz (aks holda tugma "kutish" holatida qolib ketardi).
+ */
 function pickFile(): Promise<Blob | null> {
   return new Promise((resolve) => {
     const i = document.createElement('input');
     i.type = 'file'; i.accept = 'image/*'; i.setAttribute('capture', 'environment');
-    i.onchange = () => resolve(i.files?.[0] ?? null);
-    i.oncancel = () => resolve(null);
+    i.style.cssText = 'position:fixed;left:-9999px;top:0;opacity:0';
+    document.body.appendChild(i);
+    let done = false;
+    const finish = (b: Blob | null) => {
+      if (done) return;
+      done = true;
+      window.removeEventListener('focus', onFocus);
+      i.remove();
+      resolve(b);
+    };
+    // Fokus qaytgandan so'ng "change" kechikib kelishi mumkin (katta rasm): 4 s kutamiz. Yangi brauzerlarda "cancel" darhol keladi.
+    const onFocus = () => setTimeout(() => { if (!i.files?.length) finish(null); }, 4000);
+    i.onchange = () => finish(i.files?.[0] ?? null);
+    i.addEventListener('cancel', () => finish(null));
+    setTimeout(() => window.addEventListener('focus', onFocus), 300);
     i.click();
   });
 }

@@ -7,8 +7,10 @@
   "scripts": {
     "dev": "vite",
     "build": "tsc --noEmit && vite build",
+    "build:web": "tsc --noEmit && vite build --mode web",
     "typecheck": "tsc --noEmit",
     "build:test": "VITE_SUPABASE_URL=https://testproj.supabase.co VITE_SUPABASE_ANON_KEY=sb_publishable_testkey123 vite build --outDir dist-test",
+    "build:test-web": "VITE_SUPABASE_URL=https://testproj.supabase.co VITE_SUPABASE_ANON_KEY=sb_publishable_testkey123 vite build --mode web --outDir dist-test-web",
     "preview": "vite preview",
     "cap:sync": "cap sync android"
   },

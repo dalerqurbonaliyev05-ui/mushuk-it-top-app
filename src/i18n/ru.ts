@@ -45,6 +45,7 @@ export const ru: Record<Key, string> = {
   'login.perk3': '❤️ Лайки и комментарии',
   'login.perk4': '👥 Сообщество и помощь',
   'login.google': 'Войти через Google',
+  'login.failed': 'Вход не завершён. Нажмите «Войти через Google» ещё раз.',
 
   'form.titleFirst': 'Заполните профиль',
   'form.titleEdit': 'Редактирование профиля',

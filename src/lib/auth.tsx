@@ -4,6 +4,7 @@ import { App as CapApp } from '@capacitor/app';
 import { Browser } from '@capacitor/browser';
 import { NATIVE_REDIRECT, isConfigured } from './config';
 import { isNative, supabase } from './supabase';
+import { tr } from '../i18n';
 import type { Profile } from './types';
 
 interface AuthState {
@@ -49,8 +50,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     if (!isConfigured) { setLoading(false); return; }
     let alive = true;
+    // Brauzer/iPhone: Google'dan ?code=... yoki ?error=... bilan qaytiladi. Kodni supabase-js o'zi almashtiradi va
+    // muvaffaqiyatli bo'lsa manzilni tozalaydi; xato bo'lsa xabarni ko'rsatib, manzilni o'zimiz tozalaymiz.
+    const back = isNative ? null : new URL(window.location.href);
+    const urlErr = back && (back.searchParams.get('error_description') || back.searchParams.get('error'));
     supabase.auth.getSession().then(async ({ data }) => {
       if (!alive) return;
+      if (back && (urlErr || back.searchParams.has('code'))) {
+        if (urlErr) setError(urlErr);
+        else if (!data.session) setError(tr('login.failed'));
+        ['code', 'error', 'error_code', 'error_description', 'state'].forEach((k) => back.searchParams.delete(k));
+        window.history.replaceState(window.history.state, '', back.pathname + back.search + back.hash);
+      }
       setSession(data.session);
       await loadProfile(data.session);
       if (alive) setLoading(false);

@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { App as CapApp } from '@capacitor/app';
 import { isConfigured } from './lib/config';
+import { isNative } from './lib/supabase';
 import { useAuth } from './lib/auth';
 import { LocationProvider } from './lib/location';
 import { NavProvider, useNav, type Screen } from './lib/nav';
@@ -61,8 +62,23 @@ function Shell({ userId }: { userId: string }) {
     else void CapApp.exitApp();
   };
   useEffect(() => {
+    if (!isNative) return;
     const h = CapApp.addListener('backButton', () => back.current());
     return () => { void h.then((x) => x.remove()); };
+  }, []);
+  // Brauzer/veb-ilova: telefonning "orqaga" tugmasi yoki brauzer orqaga strelkasi ham avval ochiq sahifani yopadi.
+  const canBack = useRef(false);
+  canBack.current = depth > 0 || tab !== 'home';
+  useEffect(() => {
+    if (isNative) return;
+    window.history.pushState({ mu: 1 }, '');
+    const onPop = () => {
+      if (!canBack.current) { window.history.back(); return; }
+      back.current();
+      window.history.pushState({ mu: 1 }, '');
+    };
+    window.addEventListener('popstate', onPop);
+    return () => window.removeEventListener('popstate', onPop);
   }, []);
 
   const top = nav.stack[depth - 1];

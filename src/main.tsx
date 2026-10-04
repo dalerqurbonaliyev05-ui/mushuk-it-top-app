@@ -6,6 +6,7 @@ import { App } from './App';
 import { AuthProvider } from './lib/auth';
 import { I18nProvider } from './i18n';
 import { ThemeProvider } from './lib/theme';
+import { registerServiceWorker } from './lib/pwa';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -18,3 +19,5 @@ createRoot(document.getElementById('root')!).render(
     </ThemeProvider>
   </StrictMode>,
 );
+
+registerServiceWorker();

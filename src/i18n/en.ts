@@ -45,6 +45,7 @@ export const en: Record<Key, string> = {
   'login.perk3': '❤️ Likes and comments',
   'login.perk4': '👥 Community and help',
   'login.google': 'Sign in with Google',
+  'login.failed': 'Sign-in was not completed. Tap “Sign in with Google” again.',
 
   'form.titleFirst': 'Complete your profile',
   'form.titleEdit': 'Edit profile',

@@ -52,12 +52,12 @@ svg { flex-shrink: 0; vertical-align: -3px; }
 .empty { padding: 36px 18px; text-align: center; color: var(--muted); border: 2px dashed var(--line); border-radius: 16px; margin-top: 12px; background: var(--card); }
 .hint { background: var(--card)beb; color: var(--hint-text); border-radius: 12px; padding: 9px 12px; font-size: 13px; margin-bottom: 10px; }
 
-.center-screen { min-height: 100vh; padding: calc(24px + var(--safe-top)) 24px 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 10px; }
+.center-screen { min-height: 100vh; min-height: 100dvh; padding: calc(24px + var(--safe-top)) 24px 24px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 10px; }
 .center-screen p { max-width: 340px; margin: 0; } .center-screen .big { font-size: 56px; }
 .form-screen { justify-content: flex-start; align-items: stretch; text-align: left; } .form-screen p { max-width: none; }
 
 /* ---- Kirish ---- */
-.login { min-height: 100vh; padding: calc(28px + var(--safe-top)) 24px 28px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 10px;
+.login { min-height: 100vh; min-height: 100dvh; padding: calc(28px + var(--safe-top)) 24px 28px; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 10px;
   background: linear-gradient(180deg, var(--login-a) 0%, var(--card)7ec 55%, var(--login-c) 100%); }
 .login-logo { width: 150px; height: 150px; filter: drop-shadow(0 8px 14px rgba(22,163,74,.25)); }
 .login h1 { font-size: 27px; color: var(--brand-dark); margin: 6px 0 0; } .tag { margin: 0 0 6px; color: var(--text2); font-size: 16px; }
@@ -146,7 +146,7 @@ svg { flex-shrink: 0; vertical-align: -3px; }
 .send { width: 42px; height: 42px; border-radius: 50%; border: none; background: var(--brand); color: #fff; display: grid; place-items: center; } .send[disabled] { opacity: .45; }
 
 /* ---- Xarita ---- */
-.map-page { position: relative; height: calc(100vh - var(--tab-h) - var(--safe-bottom)); }
+.map-page { position: relative; height: calc(100vh - var(--tab-h) - var(--safe-bottom)); height: calc(100dvh - var(--tab-h) - var(--safe-bottom)); }
 .map-full { position: absolute; inset: 0; z-index: 0; }
 .map-top { position: absolute; top: calc(10px + var(--safe-top)); left: 10px; right: 10px; z-index: 500; }
 .map-top .chips { margin-bottom: 0; }

@@ -44,6 +44,7 @@ export const uz = {
   'login.perk3': '❤️ Layklar va izohlar',
   'login.perk4': '👥 Hamjamiyat va yordam',
   'login.google': 'Google bilan kirish',
+  'login.failed': 'Kirish tugallanmadi. Qaytadan «Google bilan kirish»ni bosing.',
 
   'form.titleFirst': "Profilingizni to'ldiring",
   'form.titleEdit': 'Profilni tahrirlash',
