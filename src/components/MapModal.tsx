@@ -14,7 +14,7 @@ export function MapModal({ lat, lng, address, onClose }: Props) {
   useEffect(() => {
     if (!ref.current) return;
     const map = L.map(ref.current, { zoomControl: true, attributionControl: true }).setView([lat, lng], 16);
-    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap' }).addTo(map);
+    L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap', referrerPolicy: 'origin' }).addTo(map);
     // Standart marker rasmlari bundler bilan buziladi: emoji divIcon ishlatamiz.
     L.marker([lat, lng], { icon: L.divIcon({ className: 'map-pin', html: '📍', iconSize: [32, 32], iconAnchor: [16, 30] }) }).addTo(map);
     const t = setTimeout(() => map.invalidateSize(), 150);

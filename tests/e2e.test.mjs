@@ -23,7 +23,7 @@ before(async () => {
     const u = new URL(req.url, "http://x");
     const p = path.join(ROOT, u.pathname === "/" ? "index.html" : decodeURIComponent(u.pathname));
     if (!p.startsWith(ROOT) || !fs.existsSync(p) || fs.statSync(p).isDirectory()) { res.writeHead(404); return res.end("yo'q"); }
-    res.writeHead(200, { "Content-Type": MIME[path.extname(p)] || "application/octet-stream" }); fs.createReadStream(p).pipe(res);
+    res.writeHead(200, { "Content-Type": MIME[path.extname(p)] || "application/octet-stream", "Referrer-Policy": "no-referrer" }); fs.createReadStream(p).pipe(res);
   });
   await new Promise((r) => server.listen(0, "127.0.0.1", r));
   base = `http://127.0.0.1:${server.address().port}`;
@@ -89,7 +89,7 @@ async function openApp(db, opts = {}) {
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource|nominatim|tile/i.test(m.text())) errors.push(m.text()); });
   await page.route("https://nominatim.openstreetmap.org/**", (r) => r.fulfill({ contentType: "application/json", headers: { "access-control-allow-origin": "*" }, body: JSON.stringify({ address: { road: "Navoiy ko'chasi", suburb: "Mirzo Ulug'bek", city: "Toshkent" } }) }));
-  await page.route("https://tile.openstreetmap.org/**", (r) => { const m = r.request().url().match(/\/(\d+)\/(\d+)\/(\d+)\.png/); const k = m ? (Number(m[2]) + Number(m[3])) % 4 : 0; return r.fulfill({ status: 200, contentType: "image/png", body: TILES[k] }); });
+  await page.route("https://tile.openstreetmap.org/**", (r) => { (db.tileRefs ||= []).push(r.request().headers().referer || ""); const m = r.request().url().match(/\/(\d+)\/(\d+)\/(\d+)\.png/); const k = m ? (Number(m[2]) + Number(m[3])) % 4 : 0; return r.fulfill({ status: 200, contentType: "image/png", body: TILES[k] }); });
   await page.route(`${SB}/**`, async (route) => {
     const req = route.request(), u = new URL(req.url()), m = req.method();
     const cors = { "access-control-allow-origin": "*", "access-control-allow-headers": "*", "access-control-allow-methods": "*", "access-control-expose-headers": "*" };
@@ -274,6 +274,9 @@ test("xarita: rasmli pinlar, tur filtri, tanlangan e'lon kartasi va tafsilotlarg
   await page.locator(".leaflet-container").waitFor();
   await page.waitForFunction(() => document.querySelectorAll(".photo-pin").length === 4);
   assert.ok(await page.locator(".map-card").isVisible());
+  // OSM plitka siyosati: sahifa no-referrer bo'lsa ham plitkalar Referer (origin) bilan so'raladi, aks holda "Access blocked"
+  await page.waitForFunction(() => document.querySelectorAll(".leaflet-tile-loaded").length > 0);
+  assert.ok(db.tileRefs.length > 0 && db.tileRefs.every((r) => r === base + "/"), "plitkalarda Referer yo'q: " + JSON.stringify(db.tileRefs.slice(0, 3)));
   await shot(page, "4-map");
   await page.locator(".chip-btn.dog").click();
   await page.waitForFunction(() => document.querySelectorAll(".photo-pin").length === 2);
