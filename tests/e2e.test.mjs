@@ -60,8 +60,9 @@ function seed({ onboarded = true, blocked = false } = {}) {
 }
 const postWithJoin = (db, p) => ({ ...p, posts: p });
 
-async function openApp(db, { geo = true, w = 400, h = 800 } = {}) {
-  const ctx = await browser.newContext({ geolocation: { latitude: 41.3111, longitude: 69.2797, accuracy: 12 }, permissions: geo ? ["geolocation"] : [], viewport: { width: w, height: h } });
+async function openApp(db, opts = {}) {
+  const { geo = true, w = 400, h = 800, scheme = "light" } = opts;
+  const ctx = await browser.newContext({ colorScheme: scheme, locale: "en-US", geolocation: { latitude: 41.3111, longitude: 69.2797, accuracy: 12 }, permissions: geo ? ["geolocation"] : [], viewport: { width: w, height: h } });
   const page = await ctx.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
@@ -134,6 +135,7 @@ async function openApp(db, { geo = true, w = 400, h = 800 } = {}) {
     }
     return json({ message: "mock yo'q: " + m + " " + u.pathname }, 404);
   });
+  await page.addInitScript((lang) => { try { if (!localStorage.getItem("mi_lang")) localStorage.setItem("mi_lang", lang); } catch { /* */ } }, opts.lang || "uz");
   await page.addInitScript((me) => {
     localStorage.setItem("sb-testproj-auth-token", JSON.stringify({ access_token: "a.b.c", refresh_token: "r", token_type: "bearer", expires_in: 3600, expires_at: Math.floor(Date.now() / 1000) + 3600, user: { id: me, email: "daler_uz@x.uz", user_metadata: {} } }));
   }, ME);
@@ -144,7 +146,8 @@ const shot = async (page, name) => { if (SHOTS) await page.screenshot({ path: pa
 const tab = (page, name) => page.locator(".tabbar button", { hasText: name });
 
 test("kirmagan foydalanuvchi: logo, shior va Google tugmasi", async () => {
-  const ctx = await browser.newContext({ viewport: { width: 400, height: 800 } }); const page = await ctx.newPage();
+  const ctx = await browser.newContext({ viewport: { width: 400, height: 800 }, locale: "en-US" }); const page = await ctx.newPage();
+  await page.addInitScript(() => { try { localStorage.setItem("mi_lang", "uz"); } catch { /* */ } });
   await page.goto(base);
   await page.getByText("Google bilan kirish").waitFor();
   assert.match(await page.locator("h1").innerText(), /Mushuk va Itlarni Top/);
@@ -366,4 +369,96 @@ test("bloklangan foydalanuvchi: bloklangan ekran", async () => {
   await page.getByText("Hisobingiz bloklangan").waitFor();
   assert.equal(await page.locator(".tabbar").count(), 0);
   await ctx.close();
+});
+
+test("kirish ekranida til almashtirish (uz / ru / en) saqlanadi", async () => {
+  const ctx = await browser.newContext({ viewport: { width: 400, height: 800 }, locale: "en-US" }); const page = await ctx.newPage();
+  await page.goto(base);
+  // brauzer tili ingliz bo'lsa va saqlangan til bo'lmasa: inglizcha
+  await page.getByText("Sign in with Google").waitFor();
+  assert.equal(await page.evaluate(() => document.documentElement.lang), "en");
+  await page.getByRole("button", { name: "Русский" }).click();
+  await page.getByText("Войти через Google").waitFor();
+  assert.match(await page.locator("h1").innerText(), /Найди кошек и собак/);
+  assert.equal(await page.evaluate(() => document.documentElement.lang), "ru");
+  await page.getByRole("button", { name: "O'zbekcha" }).click();
+  await page.getByText("Google bilan kirish").waitFor();
+  await page.reload();
+  await page.getByText("Google bilan kirish").waitFor();   // tanlov saqlanadi
+  await shot(page, "7-login-uz");
+  await ctx.close();
+});
+
+test("til: Sozlamalar orqali ingliz va rus tiliga o'tish (tablar, sarlavhalar, vaqt va masofa birliklari)", async () => {
+  const db = seed();
+  const { page, errors, ctx } = await openApp(db);
+  await page.locator(".row-card").first().waitFor();
+  await tab(page, "Profil").click();
+  await page.locator(".menu-item", { hasText: "Sozlamalar" }).click();
+  await page.getByRole("button", { name: "English" }).click();
+  await page.getByRole("heading", { name: "Settings" }).waitFor();
+  await page.locator(".hdr .icon-btn").click();
+  assert.equal(await page.locator(".menu-item .grow").first().innerText(), "My posts");
+  await tab(page, "Home").click();
+  await page.getByRole("heading", { name: "Posts near you" }).waitFor();
+  assert.deepEqual(await page.locator(".tabbar button span:not(.ico-wrap)").allInnerTexts(), ["Home", "Map", "Alerts", "Profile"]);
+  const first = await page.locator(".row-card").first().innerText();
+  assert.match(first, /Cat/); assert.match(first, /h ago|min ago/); assert.match(first, /\d+ m|\d(\.\d)? km/);
+  await shot(page, "8-home-en");
+  // rus tili
+  await tab(page, "Profile").click();
+  await page.locator(".menu-item", { hasText: "Settings" }).click();
+  await page.getByRole("button", { name: "Русский" }).click();
+  await page.getByRole("heading", { name: "Настройки" }).waitFor();
+  await page.locator(".hdr .icon-btn").click();
+  await tab(page, "Главная").click();
+  await page.getByRole("heading", { name: "Объявления рядом" }).waitFor();
+  const ru = await page.locator(".row-card").first().innerText();
+  assert.match(ru, /Кошка/); assert.match(ru, /ч\. назад|мин\. назад/); assert.match(ru, /\d+ м|\d(\.\d)? км/);
+  await shot(page, "9-home-ru");
+  // xarita va bildirishnoma matnlari ham tarjima qilinadi
+  await tab(page, "Уведомл.").click();
+  await page.locator(".notif").first().waitFor();
+  assert.match(await page.locator(".notif").first().innerText(), /Bek Karimov поставил\(а\) лайк/);
+  assert.deepEqual(errors, []);
+  await ctx.close();
+});
+
+test("qorong'u rejim: tizim sozlamasiga ergashadi, qo'lda yorug'/qorong'u tanlanadi va saqlanadi", async () => {
+  const db = seed();
+  // 1) tizim qorong'u -> "Tizim" rejimida qorong'u
+  const a = await openApp(db, { scheme: "dark" });
+  await a.page.locator(".row-card").first().waitFor();
+  assert.equal(await a.page.evaluate(() => document.documentElement.dataset.theme), "dark");
+  const bgDark = await a.page.evaluate(() => getComputedStyle(document.body).backgroundColor);
+  const cardDark = await a.page.locator(".row-card").first().evaluate((e) => getComputedStyle(e).backgroundColor);
+  assert.notEqual(bgDark, "rgb(246, 248, 247)"); assert.notEqual(cardDark, "rgb(255, 255, 255)");
+  await shot(a.page, "10-home-dark");
+  // 2) qo'lda yorug'
+  await tab(a.page, "Profil").click();
+  await a.page.locator(".menu-item", { hasText: "Sozlamalar" }).click();
+  await a.page.getByRole("button", { name: "Yorug'" }).click();
+  await a.page.waitForFunction(() => document.documentElement.dataset.theme === "light");
+  assert.equal(await a.page.evaluate(() => getComputedStyle(document.body).backgroundColor), "rgb(246, 248, 247)");
+  // 3) qayta yuklagach tanlov saqlanadi (tizim qorong'u bo'lsa ham yorug')
+  await a.page.reload();
+  await a.page.locator(".row-card, .menu-item, .tabbar").first().waitFor();
+  assert.equal(await a.page.evaluate(() => document.documentElement.dataset.theme), "light");
+  await a.ctx.close();
+  // 4) qo'lda qorong'u (tizim yorug')
+  const b = await openApp(db, { scheme: "light" });
+  await b.page.locator(".row-card").first().waitFor();
+  assert.equal(await b.page.evaluate(() => document.documentElement.dataset.theme), "light");
+  await tab(b.page, "Profil").click();
+  await b.page.locator(".menu-item", { hasText: "Sozlamalar" }).click();
+  await b.page.getByRole("button", { name: "Qorong'u" }).click();
+  await b.page.waitForFunction(() => document.documentElement.dataset.theme === "dark");
+  assert.equal(await b.page.evaluate(() => document.querySelector('meta[name="theme-color"]').content), "#0d1412");
+  await b.page.locator(".hdr .icon-btn").click();
+  await tab(b.page, "Xarita").click();
+  await b.page.locator(".leaflet-container").waitFor();
+  assert.match(await b.page.locator(".leaflet-tile-pane").evaluate((e) => getComputedStyle(e).filter), /invert/);
+  await shot(b.page, "11-map-dark");
+  assert.deepEqual(b.errors, []);
+  await b.ctx.close();
 });

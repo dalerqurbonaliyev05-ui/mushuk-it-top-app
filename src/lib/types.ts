@@ -55,11 +55,13 @@ export interface NotificationRow {
   created_at: string;
 }
 
-export const ANIMAL: Record<AnimalType, { icon: string; label: string; plural: string }> = {
-  cat: { icon: '🐱', label: 'Mushuk', plural: 'Mushuklar' },
-  dog: { icon: '🐶', label: 'It', plural: 'Itlar' },
-};
+import { tr } from '../i18n';
 
+export const ANIMAL: Record<AnimalType, { icon: string }> = { cat: { icon: '🐱' }, dog: { icon: '🐶' } };
+export const animalLabel = (t: AnimalType) => tr(t === 'cat' ? 'animal.cat' : 'animal.dog');
+export const animalPlural = (t: AnimalType) => tr(t === 'cat' ? 'animal.cats' : 'animal.dogs');
+
+/** E'lon sarlavhasi; kiritilmagan bo'lsa hayvon turi (joriy tilda). */
 export function postTitle(p: Pick<Post, 'title' | 'animal_type'>): string {
-  return p.title?.trim() || ANIMAL[p.animal_type].label;
+  return p.title?.trim() || animalLabel(p.animal_type);
 }

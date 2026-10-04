@@ -6,10 +6,12 @@ import { Icon } from '../components/Icons';
 import { useAuth } from '../lib/auth';
 import { useNav } from '../lib/nav';
 import { PAGE_SIZE, fetchPosts, type FeedPost } from '../lib/posts';
-import { ANIMAL, type AnimalType } from '../lib/types';
+import { animalPlural, type AnimalType } from '../lib/types';
+import { useI18n } from '../i18n';
 
 /** Barcha e'lonlar lentasi (to'liq kartalar: layk, izoh, lokatsiya) — tur va qidiruv bo'yicha filtr. */
 export function AllPosts({ type: t0 = null, q: q0 = '' }: { type?: AnimalType | null; q?: string }) {
+  const { t } = useI18n();
   const { session } = useAuth();
   const me = session!.user.id;
   const nav = useNav();
@@ -36,25 +38,25 @@ export function AllPosts({ type: t0 = null, q: q0 = '' }: { type?: AnimalType | 
 
   useEffect(() => { void load(true, 0); }, [load]);
 
-  const title = type ? ANIMAL[type].plural : 'Barcha e\'lonlar';
+  const title = type ? animalPlural(type) : t('all.title');
   return (
     <div className="screen">
       <Header title={title} onBack={nav.pop} />
       <div className="pad-x">
         <form className="search" onSubmit={(e: FormEvent) => { e.preventDefault(); setQuery(q.trim()); }}>
           <Icon name="search" size={19} />
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Sarlavha, izoh yoki manzil bo'yicha" aria-label="Qidirish" />
+          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('all.search')} aria-label={t('home.searchAria')} />
         </form>
         <TypeChips value={type} onChange={setType} />
-        {err && <div className="alert err">{err} <button className="link" onClick={() => void load(true, 0)}>Qayta urinish</button></div>}
-        {!loading && !err && posts.length === 0 && <div className="empty">E&apos;lon topilmadi</div>}
+        {err && <div className="alert err">{err} <button className="link" onClick={() => void load(true, 0)}>{t('common.retry')}</button></div>}
+        {!loading && !err && posts.length === 0 && <div className="empty">{t('all.notFound')}</div>}
         {posts.map((p) => (
           <PostCard key={p.id} post={p} me={me} onOpen={nav.openPost}
             onChange={(np) => setPosts((l) => l.map((x) => (x.id === np.id ? np : x)))}
             onDeleted={(id) => setPosts((l) => l.filter((x) => x.id !== id))} />
         ))}
         {loading && <div className="center muted pad"><div className="spinner" /></div>}
-        {!loading && more && <button className="btn ghost block" onClick={() => void load(false, posts.length)}>Yana yuklash</button>}
+        {!loading && more && <button className="btn ghost block" onClick={() => void load(false, posts.length)}>{t('common.more')}</button>}
       </div>
     </div>
   );

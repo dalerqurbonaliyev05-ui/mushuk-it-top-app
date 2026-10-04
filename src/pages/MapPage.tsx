@@ -8,8 +8,8 @@ import { useMyLocation } from '../lib/location';
 import { useNav } from '../lib/nav';
 import { fetchMapPosts, thumbUrl, type FeedPost } from '../lib/posts';
 import { distanceKm } from '../lib/geo';
-import { timeAgo } from '../lib/format';
 import { postTitle, type AnimalType } from '../lib/types';
+import { timeAgo, useI18n } from '../i18n';
 
 const TASHKENT: [number, number] = [41.3111, 69.2797];
 const MAX_PINS = 80;
@@ -28,6 +28,7 @@ function pinIcon(p: FeedPost, selected: boolean): L.DivIcon {
 
 /** Xarita: e'lonlar rasmli pinlar bilan, tur filtri, qidiruv, "men turgan joy" tugmasi va tanlangan e'lon kartasi. */
 export function MapPage() {
+  const { t } = useI18n();
   const { session } = useAuth();
   const me = session!.user.id;
   const nav = useNav();
@@ -94,10 +95,10 @@ export function MapPage() {
     <div className="map-page">
       <div ref={box} className="map-full" />
       <div className="map-top">
-        <div className="search floating"><Icon name="search" size={19} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder="Bu yerda qidirish..." aria-label="Xaritada qidirish" /></div>
+        <div className="search floating"><Icon name="search" size={19} /><input value={q} onChange={(e) => setQ(e.target.value)} placeholder={t('map.search')} aria-label={t('map.searchAria')} /></div>
         <TypeChips value={type} onChange={setType} />
       </div>
-      <button className="locate" onClick={() => void locate()} aria-label="Mening joylashuvim"><Icon name="locate" /></button>
+      <button className="locate" onClick={() => void locate()} aria-label={t('map.locate')}><Icon name="locate" /></button>
       {err && <div className="alert err map-err">{err}</div>}
       {selected && (
         <div className="map-card">
@@ -105,13 +106,13 @@ export function MapPage() {
           <div className="row-body">
             <div className="row-top"><TypeBadge type={selected.animal_type} /><span className="likes"><Icon name="heart" size={15} fill /> {selected.likes[0]?.count ?? 0}</span></div>
             <b className="row-title ellip">{postTitle(selected)}</b>
-            <div className="muted small ellip">{selected.address ?? 'Manzil aniqlanmagan'}</div>
+            <div className="muted small ellip">{selected.address ?? t('common.noAddress')}</div>
             <div className="muted small">{timeAgo(selected.created_at)}</div>
-            <button className="btn ok small" onClick={() => nav.openPost(selected.id)}><Icon name="pin" size={15} /> Lokatsiyani ko&apos;rish</button>
+            <button className="btn ok small" onClick={() => nav.openPost(selected.id)}><Icon name="pin" size={15} /> {t('map.view')}</button>
           </div>
         </div>
       )}
-      {!selected && posts.length > 0 && <div className="map-card empty-card">Bu filtr bo&apos;yicha e&apos;lon topilmadi</div>}
+      {!selected && posts.length > 0 && <div className="map-card empty-card">{t('map.none')}</div>}
     </div>
   );
 }

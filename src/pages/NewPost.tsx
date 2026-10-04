@@ -6,7 +6,8 @@ import { takePhoto } from '../lib/camera';
 import { compressImage } from '../lib/image';
 import { GeoError, ensureLocationPermission, fmtCoords, getPosition, reverseGeocode, type Fix } from '../lib/geo';
 import { createPost } from '../lib/posts';
-import { ANIMAL, type AnimalType } from '../lib/types';
+import { ANIMAL, animalLabel, type AnimalType } from '../lib/types';
+import { useI18n } from '../i18n';
 
 interface Shot { blob: Blob; thumb: Blob; url: string; fix: Fix | null; address: string | null; geoError: string | null }
 
@@ -15,6 +16,7 @@ interface Shot { blob: Blob; thumb: Blob; url: string; fix: Fix | null; address:
  * va saqlanadi, 4) sarlavha va izoh (ixtiyoriy), yuborish.
  */
 export function NewPostPage({ onPosted }: { onPosted: () => void }) {
+  const { t } = useI18n();
   const { session } = useAuth();
   const { refresh } = useMyLocation();
   const [animal, setAnimal] = useState<AnimalType | null>(null);
@@ -73,49 +75,49 @@ export function NewPostPage({ onPosted }: { onPosted: () => void }) {
   if (!shot) {
     return (
       <div>
-        <h2>Yangi e&apos;lon</h2>
-        <p className="muted">Hayvonni tanlang, kamera ochiladi. Rasm olingan joyning GPS joylashuvi avtomatik saqlanadi.</p>
+        <h2>{t('new.title')}</h2>
+        <p className="muted">{t('new.hint')}</p>
         {err && <div className="alert err">{err}</div>}
         <div className="tiles big">
           {(Object.keys(ANIMAL) as AnimalType[]).map((k) => (
             <button key={k} className={`tile ${k}`} disabled={busy} onClick={() => void capture(k)}>
-              <span className="emo">{ANIMAL[k].icon}</span>{ANIMAL[k].label}
+              <span className="emo">{ANIMAL[k].icon}</span>{animalLabel(k)}
             </button>
           ))}
         </div>
-        {step === 'camera' && <div className="center muted pad">Kamera ochilmoqda...</div>}
-        {step === 'locating' && <div className="center muted pad"><div className="spinner" />Joylashuv aniqlanmoqda...</div>}
+        {step === 'camera' && <div className="center muted pad">{t('new.camera')}</div>}
+        {step === 'locating' && <div className="center muted pad"><div className="spinner" />{t('new.locating')}</div>}
       </div>
     );
   }
 
   return (
     <div>
-      <h2>E&apos;lonni tasdiqlang</h2>
-      <img className="post-img preview" src={shot.url} alt="Olingan rasm" />
+      <h2>{t('new.confirm')}</h2>
+      <img className="post-img preview" src={shot.url} alt={t('new.photoAlt')} />
       <div className="seg">
         {(Object.keys(ANIMAL) as AnimalType[]).map((k) => (
-          <button key={k} className={animal === k ? `on ${k}` : ''} disabled={busy} onClick={() => setAnimal(k)}>{ANIMAL[k].icon} {ANIMAL[k].label}</button>
+          <button key={k} className={animal === k ? `on ${k}` : ''} disabled={busy} onClick={() => setAnimal(k)}>{ANIMAL[k].icon} {animalLabel(k)}</button>
         ))}
       </div>
       <div className="loc solo">
         {shot.fix ? (
-          <div className="loc-text"><Icon name="pin" size={16} /> {shot.address ?? 'Manzil aniqlanmagan'}<div className="muted small">{fmtCoords(shot.fix.lat, shot.fix.lng)}{shot.fix.accuracy ? ` · ±${Math.round(shot.fix.accuracy)} m` : ''}</div></div>
+          <div className="loc-text"><Icon name="pin" size={16} /> {shot.address ?? t('common.noAddress')}<div className="muted small">{fmtCoords(shot.fix.lat, shot.fix.lng)}{shot.fix.accuracy ? ` · ±${Math.round(shot.fix.accuracy)} m` : ''}</div></div>
         ) : (
-          <div className="loc-text"><span className="bad">Joylashuv olinmadi.</span><div className="muted small">{shot.geoError}</div></div>
+          <div className="loc-text"><span className="bad">{t('new.noLoc')}</span><div className="muted small">{shot.geoError}</div></div>
         )}
-        <button className="btn small ghost" disabled={busy} onClick={() => void retryLocation()} aria-label="Joylashuvni qayta aniqlash"><Icon name="locate" size={17} /></button>
+        <button className="btn small ghost" disabled={busy} onClick={() => void retryLocation()} aria-label={t('new.relocate')}><Icon name="locate" size={17} /></button>
       </div>
-      <label className="field">Sarlavha
-        <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} placeholder="Masalan: Chiroyli oq mushuk" />
+      <label className="field">{t('new.titleLabel')}
+        <input value={title} onChange={(e) => setTitle(e.target.value)} maxLength={80} placeholder={t('new.titlePh')} />
       </label>
-      <label className="field">Izoh (ixtiyoriy)
-        <textarea value={caption} onChange={(e) => setCaption(e.target.value)} maxLength={500} rows={3} placeholder="Masalan: yo'lak yonida, qo'rqmaydi, ovqat berdim" />
+      <label className="field">{t('new.captionLabel')}
+        <textarea value={caption} onChange={(e) => setCaption(e.target.value)} maxLength={500} rows={3} placeholder={t('new.captionPh')} />
       </label>
       {err && <div className="alert err">{err}</div>}
-      <button className="btn block" disabled={busy || !shot.fix || !animal} onClick={() => void send()}>{step === 'sending' ? 'Yuborilmoqda...' : 'E\'lon qilish'}</button>
-      <button className="btn ghost block" disabled={busy} onClick={() => void capture(animal ?? 'cat')}><Icon name="camera" size={17} /> Qayta suratga olish</button>
-      <button className="btn ghost block" disabled={busy} onClick={() => { setShot(null); setAnimal(null); }}>Bekor qilish</button>
+      <button className="btn block" disabled={busy || !shot.fix || !animal} onClick={() => void send()}>{step === 'sending' ? t('new.sending') : t('new.publish')}</button>
+      <button className="btn ghost block" disabled={busy} onClick={() => void capture(animal ?? 'cat')}><Icon name="camera" size={17} /> {t('new.retake')}</button>
+      <button className="btn ghost block" disabled={busy} onClick={() => { setShot(null); setAnimal(null); }}>{t('common.cancel')}</button>
     </div>
   );
 }

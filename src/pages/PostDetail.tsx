@@ -9,11 +9,12 @@ import { useMyLocation } from '../lib/location';
 import { useNav } from '../lib/nav';
 import { addComment, deleteComment, deletePost, fetchComments, fetchPost, setLike, type FeedComment, type FeedPost } from '../lib/posts';
 import { fmtCoords, mapsUrl } from '../lib/geo';
-import { timeAgo } from '../lib/format';
 import { openExternal } from '../lib/open';
 import { postTitle } from '../lib/types';
+import { timeAgo, useI18n } from '../i18n';
 
 export function PostDetail({ id }: { id: string }) {
+  const { t } = useI18n();
   const { session, profile } = useAuth();
   const me = session!.user.id;
   const nav = useNav();
@@ -35,8 +36,8 @@ export function PostDetail({ id }: { id: string }) {
     return () => { alive = false; };
   }, [me, id, loadComments]);
 
-  if (post === undefined) return <div className="screen"><Header title="E'lon tafsilotlari" onBack={nav.pop} /><div className="center muted pad"><div className="spinner" /></div></div>;
-  if (post === null) return <div className="screen"><Header title="E'lon tafsilotlari" onBack={nav.pop} /><div className="empty m">{err ?? 'E\'lon topilmadi yoki o\'chirilgan'}</div></div>;
+  if (post === undefined) return <div className="screen"><Header title={t('detail.title')} onBack={nav.pop} /><div className="center muted pad"><div className="spinner" /></div></div>;
+  if (post === null) return <div className="screen"><Header title={t('detail.title')} onBack={nav.pop} /><div className="empty m">{err ?? t('detail.gone')}</div></div>;
 
   const likes = post.likes[0]?.count ?? 0;
   const dist = distanceTo(post.latitude, post.longitude);
@@ -63,7 +64,7 @@ export function PostDetail({ id }: { id: string }) {
     setBusy(false);
   }
   async function removeComment(cid: string) {
-    if (!post || !window.confirm('Izohni o\'chirasizmi?')) return;
+    if (!post || !window.confirm(t('detail.deleteCommentConfirm'))) return;
     try {
       await deleteComment(cid);
       setComments((l) => l.filter((c) => c.id !== cid));
@@ -71,57 +72,57 @@ export function PostDetail({ id }: { id: string }) {
     } catch (x) { setErr(x instanceof Error ? x.message : String(x)); }
   }
   async function removePost() {
-    if (!post || !window.confirm('E\'loningizni o\'chirasizmi?')) return;
+    if (!post || !window.confirm(t('post.deleteConfirm'))) return;
     try { await deletePost(post); nav.pop(); } catch (x) { setErr(x instanceof Error ? x.message : String(x)); }
   }
 
   return (
     <div className="screen with-bar">
-      <Header title="E'lon tafsilotlari" onBack={nav.pop}
-        right={mine ? <button className="icon-btn danger" onClick={() => void removePost()} aria-label="E'lonni o'chirish"><Icon name="trash" size={20} /></button> : undefined} />
+      <Header title={t('detail.title')} onBack={nav.pop}
+        right={mine ? <button className="icon-btn danger" onClick={() => void removePost()} aria-label={t('detail.deletePost')}><Icon name="trash" size={20} /></button> : undefined} />
       <img className="detail-img" src={post.image_url} alt={postTitle(post)} />
-      {post.status === 'blocked' && <div className="alert err tight">Bu e&apos;lon administrator tomonidan bloklangan, boshqalarga ko&apos;rinmaydi.</div>}
+      {post.status === 'blocked' && <div className="alert err tight">{t('post.blocked')}</div>}
       <div className="detail">
         <div className="d-title">
           <h3>{postTitle(post)}</h3>
           <TypeBadge type={post.animal_type} />
           <span className="likes big"><Icon name="heart" size={17} fill /> {likes}</span>
         </div>
-        <div className="author"><Avatar name={post.author?.full_name ?? '?'} url={post.author?.avatar_url ?? null} size={30} /><span><b>{post.author?.full_name ?? 'Foydalanuvchi'}</b></span></div>
+        <div className="author"><Avatar name={post.author?.full_name ?? '?'} url={post.author?.avatar_url ?? null} size={30} /><span><b>{post.author?.full_name ?? t('common.user')}</b></span></div>
         {post.caption && <p className="caption lg">{post.caption}</p>}
         <div className="info-list">
           <button className="info" onClick={() => void openExternal(mapsUrl(post.latitude, post.longitude))}>
-            <Icon name="pin" /><span><small>Joylashuv</small><b>{post.address ?? 'Manzil aniqlanmagan'}</b><small>{fmtCoords(post.latitude, post.longitude)}</small></span><Icon name="chevron" size={16} />
+            <Icon name="pin" /><span><small>{t('detail.location')}</small><b>{post.address ?? t('common.noAddress')}</b><small>{fmtCoords(post.latitude, post.longitude)}</small></span><Icon name="chevron" size={16} />
           </button>
-          <div className="info"><Icon name="ruler" /><span><small>Masofa</small><b>{dist ?? 'Joylashuvingiz noma\'lum'}</b></span></div>
-          <div className="info"><Icon name="clock" /><span><small>Joylashtirilgan vaqti</small><b>{timeAgo(post.created_at)}</b></span></div>
+          <div className="info"><Icon name="ruler" /><span><small>{t('detail.distance')}</small><b>{dist ?? t('detail.noDistance')}</b></span></div>
+          <div className="info"><Icon name="clock" /><span><small>{t('detail.posted')}</small><b>{timeAgo(post.created_at)}</b></span></div>
         </div>
         <div className="mapbox">
           <MiniMap lat={post.latitude} lng={post.longitude} />
-          <button className="btn ok block" onClick={() => void openExternal(mapsUrl(post.latitude, post.longitude))}><Icon name="external" size={17} /> Google Maps&apos;da ochish</button>
+          <button className="btn ok block" onClick={() => void openExternal(mapsUrl(post.latitude, post.longitude))}><Icon name="external" size={17} /> {t('detail.openMaps')}</button>
         </div>
         <div className="two">
-          <button className={`btn-soft like ${post.liked ? 'on' : ''}`} onClick={() => void toggleLike()} aria-pressed={post.liked}><Icon name="heart" size={19} fill={post.liked} /> Layk ({likes})</button>
-          <a className="btn-soft comment" href="#comments"><Icon name="comment" size={19} /> Izoh ({post.comments[0]?.count ?? 0})</a>
+          <button className={`btn-soft like ${post.liked ? 'on' : ''}`} onClick={() => void toggleLike()} aria-pressed={post.liked}><Icon name="heart" size={19} fill={post.liked} /> {t('detail.like', { n: likes })}</button>
+          <a className="btn-soft comment" href="#comments"><Icon name="comment" size={19} /> {t('detail.comment', { n: post.comments[0]?.count ?? 0 })}</a>
         </div>
-        <h4 id="comments" className="sec-title">Izohlar</h4>
+        <h4 id="comments" className="sec-title">{t('detail.comments')}</h4>
         {err && <div className="alert err">{err}</div>}
-        {comments.length === 0 && <div className="muted small">Hali izoh yo&apos;q. Birinchi bo&apos;ling!</div>}
+        {comments.length === 0 && <div className="muted small">{t('detail.noComments')}</div>}
         {comments.map((c) => (
           <div key={c.id} className="comment">
             <Avatar name={c.author?.full_name ?? '?'} url={c.author?.avatar_url ?? null} size={32} />
             <div className="grow">
-              <b>{c.author?.full_name ?? 'Foydalanuvchi'}</b> <span className="muted small">{timeAgo(c.created_at)}</span>
+              <b>{c.author?.full_name ?? t('common.user')}</b> <span className="muted small">{timeAgo(c.created_at)}</span>
               <div className="ctext">{c.text}</div>
             </div>
-            {c.user_id === me && <button className="link bad" onClick={() => void removeComment(c.id)}>O&apos;chirish</button>}
+            {c.user_id === me && <button className="link bad" onClick={() => void removeComment(c.id)}>{t('common.delete')}</button>}
           </div>
         ))}
       </div>
       <form className="comment-bar" onSubmit={send}>
         <Avatar name={profile?.full_name ?? '?'} url={profile?.avatar_url ?? null} size={34} />
-        <input value={text} onChange={(e) => setText(e.target.value)} maxLength={500} placeholder="Izoh yozing..." aria-label="Izoh" />
-        <button className="send" disabled={busy || !text.trim()} aria-label="Yuborish"><Icon name="send" size={19} /></button>
+        <input value={text} onChange={(e) => setText(e.target.value)} maxLength={500} placeholder={t('detail.commentPh')} aria-label={t('detail.commentPh')} />
+        <button className="send" disabled={busy || !text.trim()} aria-label={t('detail.send')}><Icon name="send" size={19} /></button>
       </form>
     </div>
   );

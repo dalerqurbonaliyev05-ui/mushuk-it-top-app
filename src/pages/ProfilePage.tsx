@@ -4,8 +4,10 @@ import { useNav } from '../lib/nav';
 import { Avatar } from '../components/Avatar';
 import { Icon, type IconName } from '../components/Icons';
 import { fetchStats, type Stats } from '../lib/posts';
+import { useI18n } from '../i18n';
 
 export function ProfilePage({ unread, onNotifications }: { unread: number; onNotifications: () => void }) {
+  const { t } = useI18n();
   const { profile, session, signOut } = useAuth();
   const nav = useNav();
   const [stats, setStats] = useState<Stats | null>(null);
@@ -14,13 +16,13 @@ export function ProfilePage({ unread, onNotifications }: { unread: number; onNot
   const handle = (session.user.email ?? '').split('@')[0];
 
   const items: { icon: IconName; label: string; badge?: number; color: string; go: () => void }[] = [
-    { icon: 'image', label: 'Mening e\'lonlarim', color: '#16a34a', go: () => nav.push({ name: 'myPosts' }) },
-    { icon: 'heart', label: 'Sevimlilarim', color: '#e11d48', go: () => nav.push({ name: 'favorites' }) },
-    { icon: 'comment', label: 'Izohlarim', color: '#2563eb', go: () => nav.push({ name: 'myComments' }) },
-    { icon: 'mail', label: 'Xabarlar', color: '#475569', badge: unread, go: onNotifications },
-    { icon: 'settings', label: 'Sozlamalar', color: '#475569', go: () => nav.push({ name: 'settings' }) },
-    { icon: 'help', label: 'Yordam va qo\'llab-quvvatlash', color: '#475569', go: () => nav.push({ name: 'help' }) },
-    { icon: 'logout', label: 'Chiqish', color: '#dc2626', go: () => { if (window.confirm('Chiqishni xohlaysizmi?')) void signOut(); } },
+    { icon: 'image', label: t('me.menuPosts'), color: '#16a34a', go: () => nav.push({ name: 'myPosts' }) },
+    { icon: 'heart', label: t('me.menuFavs'), color: '#e11d48', go: () => nav.push({ name: 'favorites' }) },
+    { icon: 'comment', label: t('me.menuComments'), color: '#2563eb', go: () => nav.push({ name: 'myComments' }) },
+    { icon: 'mail', label: t('me.menuMsgs'), color: '#475569', badge: unread, go: onNotifications },
+    { icon: 'settings', label: t('me.menuSettings'), color: '#475569', go: () => nav.push({ name: 'settings' }) },
+    { icon: 'help', label: t('me.menuHelp'), color: '#475569', go: () => nav.push({ name: 'help' }) },
+    { icon: 'logout', label: t('common.signout'), color: '#dc2626', go: () => { if (window.confirm(t('me.signoutConfirm'))) void signOut(); } },
   ];
 
   return (
@@ -32,12 +34,12 @@ export function ProfilePage({ unread, onNotifications }: { unread: number; onNot
         {profile.city && <div className="muted small"><Icon name="pin" size={13} /> {profile.city}</div>}
       </div>
       <div className="stats">
-        <div><b>{stats?.posts ?? '–'}</b><span>E&apos;lonlar</span></div>
-        <div><b>{stats?.likes ?? '–'}</b><span>Layklar</span></div>
-        <div><b>{stats?.comments ?? '–'}</b><span>Izohlar</span></div>
+        <div><b>{stats?.posts ?? '–'}</b><span>{t('me.posts')}</span></div>
+        <div><b>{stats?.likes ?? '–'}</b><span>{t('me.likes')}</span></div>
+        <div><b>{stats?.comments ?? '–'}</b><span>{t('me.comments')}</span></div>
       </div>
       {profile.bio && <p className="bio">{profile.bio}</p>}
-      <button className="btn ghost block" onClick={() => nav.push({ name: 'settings' })}><Icon name="edit" size={17} /> Tahrirlash</button>
+      <button className="btn ghost block" onClick={() => nav.push({ name: 'settings' })}><Icon name="edit" size={17} /> {t('common.edit')}</button>
       <div className="menu">
         {items.map((it) => (
           <button key={it.label} className="menu-item" onClick={it.go}>

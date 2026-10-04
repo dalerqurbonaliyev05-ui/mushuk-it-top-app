@@ -3,11 +3,13 @@ import L from 'leaflet';
 import { Sheet } from './Sheet';
 import { fmtCoords, mapsUrl } from '../lib/geo';
 import { openExternal } from '../lib/open';
+import { useI18n } from '../i18n';
 
 interface Props { lat: number; lng: number; address: string | null; onClose: () => void }
 
 /** Ilova ichidagi xarita (OpenStreetMap + Leaflet) va Google Maps havolasi. */
 export function MapModal({ lat, lng, address, onClose }: Props) {
+  const { t } = useI18n();
   const ref = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!ref.current) return;
@@ -19,10 +21,10 @@ export function MapModal({ lat, lng, address, onClose }: Props) {
     return () => { clearTimeout(t); map.remove(); };
   }, [lat, lng]);
   return (
-    <Sheet title="Joylashuv" onClose={onClose}>
+    <Sheet title={t('map.modalTitle')} onClose={onClose}>
       <div ref={ref} className="map" />
-      <p className="loc-line">📍 {address ?? 'Manzil aniqlanmagan'}<br /><span className="muted">{fmtCoords(lat, lng)}</span></p>
-      <button className="btn" onClick={() => void openExternal(mapsUrl(lat, lng))}>Google Maps&apos;da ochish</button>
+      <p className="loc-line">📍 {address ?? t('common.noAddress')}<br /><span className="muted">{fmtCoords(lat, lng)}</span></p>
+      <button className="btn" onClick={() => void openExternal(mapsUrl(lat, lng))}>{t('detail.openMaps')}</button>
     </Sheet>
   );
 }

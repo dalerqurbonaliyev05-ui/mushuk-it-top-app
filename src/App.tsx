@@ -16,6 +16,7 @@ import { ProfilePage } from './pages/ProfilePage';
 import { AllPosts } from './pages/AllPosts';
 import { PostDetail } from './pages/PostDetail';
 import { Favorites, Help, MyComments, MyPosts, Settings } from './pages/Lists';
+import { useI18n } from './i18n';
 
 type Tab = 'home' | 'map' | 'new' | 'notifs' | 'me';
 
@@ -32,6 +33,7 @@ function ScreenView({ s }: { s: Screen }) {
 }
 
 function Shell({ userId }: { userId: string }) {
+  const { t } = useI18n();
   const nav = useNav();
   const [tab, setTab] = useState<Tab>('home');
   const [unread, setUnread] = useState(0);
@@ -76,11 +78,11 @@ function Shell({ userId }: { userId: string }) {
       {top && <div className="overlay"><ScreenView s={top} key={depth} /></div>}
       {depth === 0 && (
         <nav className="tabbar">
-          <button className={tab === 'home' ? 'on' : ''} onClick={() => setTab('home')}><Icon name="home" /><span>Bosh sahifa</span></button>
-          <button className={tab === 'map' ? 'on' : ''} onClick={() => setTab('map')}><Icon name="map" /><span>Xarita</span></button>
-          <button className={`add ${tab === 'new' ? 'on' : ''}`} onClick={() => setTab('new')} aria-label="Yangi e'lon"><i><Icon name="plus" size={28} /></i></button>
-          <button className={tab === 'notifs' ? 'on' : ''} onClick={() => setTab('notifs')}><span className="ico-wrap"><Icon name="bell" />{unread > 0 && <i className="dot">{unread > 9 ? '9+' : unread}</i>}</span><span>Xabarlar</span></button>
-          <button className={tab === 'me' ? 'on' : ''} onClick={() => setTab('me')}><Icon name="user" /><span>Profil</span></button>
+          <button className={tab === 'home' ? 'on' : ''} onClick={() => setTab('home')}><Icon name="home" /><span>{t('tab.home')}</span></button>
+          <button className={tab === 'map' ? 'on' : ''} onClick={() => setTab('map')}><Icon name="map" /><span>{t('tab.map')}</span></button>
+          <button className={`add ${tab === 'new' ? 'on' : ''}`} onClick={() => setTab('new')} aria-label={t('tab.new')}><i><Icon name="plus" size={28} /></i></button>
+          <button className={tab === 'notifs' ? 'on' : ''} onClick={() => setTab('notifs')}><span className="ico-wrap"><Icon name="bell" />{unread > 0 && <i className="dot">{unread > 9 ? '9+' : unread}</i>}</span><span>{t('tab.notifs')}</span></button>
+          <button className={tab === 'me' ? 'on' : ''} onClick={() => setTab('me')}><Icon name="user" /><span>{t('tab.me')}</span></button>
         </nav>
       )}
     </div>
@@ -88,24 +90,25 @@ function Shell({ userId }: { userId: string }) {
 }
 
 export function App() {
+  const { t } = useI18n();
   const { session, profile, loading, error, signOut, refreshProfile } = useAuth();
 
   if (!isConfigured) {
     return (
       <div className="center-screen">
-        <h2>Supabase sozlanmagan</h2>
-        <p className="muted">Build vaqtida <code>VITE_SUPABASE_URL</code> va <code>VITE_SUPABASE_ANON_KEY</code> berilmagan. README&apos;dagi «Sozlash» bo&apos;limiga qarang.</p>
+        <h2>{t('cfg.title')}</h2>
+        <p className="muted">{t('cfg.body')}</p>
       </div>
     );
   }
-  if (loading) return <div className="center-screen"><div className="spinner" />Yuklanmoqda...</div>;
+  if (loading) return <div className="center-screen"><div className="spinner" />{t('common.loading')}</div>;
   if (!session) return <Login />;
   if (!profile) {
     return (
       <div className="center-screen">
-        <p>{error ? `Profilni yuklab bo'lmadi: ${error}` : 'Profil topilmadi.'}</p>
-        <button className="btn" onClick={() => void refreshProfile()}>Qayta urinish</button>
-        <button className="btn ghost" onClick={() => void signOut()}>Chiqish</button>
+        <p>{error ? t('profile.loadFail', { err: error }) : t('profile.notFound')}</p>
+        <button className="btn" onClick={() => void refreshProfile()}>{t('common.retry')}</button>
+        <button className="btn ghost" onClick={() => void signOut()}>{t('common.signout')}</button>
       </div>
     );
   }
@@ -113,9 +116,9 @@ export function App() {
     return (
       <div className="center-screen">
         <div className="big">🚫</div>
-        <h2>Hisobingiz bloklangan</h2>
-        <p className="muted">Qoidalar buzilgani uchun administrator hisobingizni bloklagan.</p>
-        <button className="btn ghost" onClick={() => void signOut()}>Chiqish</button>
+        <h2>{t('blocked.title')}</h2>
+        <p className="muted">{t('blocked.text')}</p>
+        <button className="btn ghost" onClick={() => void signOut()}>{t('common.signout')}</button>
       </div>
     );
   }

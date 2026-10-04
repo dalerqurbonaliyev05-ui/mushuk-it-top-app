@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { Geolocation } from '@capacitor/geolocation';
+import { currentLang, tr } from '../i18n';
 
 export interface Fix { lat: number; lng: number; accuracy: number | null }
 
@@ -13,7 +14,7 @@ export async function ensureLocationPermission(): Promise<void> {
   let p = await Geolocation.checkPermissions();
   if (p.location !== 'granted' && p.coarseLocation !== 'granted') p = await Geolocation.requestPermissions({ permissions: ['location'] });
   if (p.location !== 'granted' && p.coarseLocation !== 'granted') {
-    throw new GeoError('denied', 'Joylashuvga ruxsat berilmagan. Sozlamalar > Ilovalar > Mushuk va Itlarni Top > Ruxsatlar orqali yoqing.');
+    throw new GeoError('denied', tr('err.locDenied'));
   }
 }
 
@@ -25,9 +26,9 @@ export async function getPosition(): Promise<Fix> {
     return { lat: p.coords.latitude, lng: p.coords.longitude, accuracy: p.coords.accuracy ?? null };
   } catch (e) {
     const m = e instanceof Error ? e.message : String(e);
-    if (/denied|permission/i.test(m)) throw new GeoError('denied', 'Joylashuvga ruxsat berilmagan.');
-    if (/timeout|timed out/i.test(m)) throw new GeoError('timeout', 'Joylashuv aniqlanmadi (vaqt tugadi). GPS yoqilganini tekshirib, qayta urinib ko\'ring.');
-    throw new GeoError('unavailable', 'Joylashuvni aniqlab bo\'lmadi. GPS yoqilganini tekshiring.');
+    if (/denied|permission/i.test(m)) throw new GeoError('denied', tr('err.locDenied2'));
+    if (/timeout|timed out/i.test(m)) throw new GeoError('timeout', tr('err.locTimeout'));
+    throw new GeoError('unavailable', tr('err.locUnavailable'));
   }
 }
 
@@ -36,7 +37,7 @@ export async function reverseGeocode(lat: number, lng: number): Promise<string |
   const ctl = new AbortController();
   const t = setTimeout(() => ctl.abort(), 7000);
   try {
-    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&accept-language=uz,ru,en&lat=${lat}&lon=${lng}`, { signal: ctl.signal });
+    const r = await fetch(`https://nominatim.openstreetmap.org/reverse?format=jsonv2&zoom=18&accept-language=${currentLang()},uz,ru,en&lat=${lat}&lon=${lng}`, { signal: ctl.signal });
     if (!r.ok) return null;
     const j = (await r.json()) as { display_name?: string; address?: Record<string, string> };
     const a = j.address ?? {};
@@ -60,6 +61,6 @@ export function distanceKm(a: { lat: number; lng: number }, b: { lat: number; ln
 }
 
 export function fmtDistance(km: number): string {
-  if (km < 1) return `${Math.max(10, Math.round((km * 1000) / 10) * 10)} m`;
-  return `${km < 10 ? km.toFixed(1) : Math.round(km)} km`;
+  if (km < 1) return `${Math.max(10, Math.round((km * 1000) / 10) * 10)} ${tr('unit.m')}`;
+  return `${km < 10 ? km.toFixed(1) : Math.round(km)} ${tr('unit.km')}`;
 }

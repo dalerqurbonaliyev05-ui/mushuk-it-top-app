@@ -1,5 +1,6 @@
 import { Capacitor } from '@capacitor/core';
 import { Camera, CameraResultType, CameraSource } from '@capacitor/camera';
+import { tr } from '../i18n';
 
 /** Kamera bilan rasm oladi. Foydalanuvchi bekor qilsa null. Brauzerda (dev) fayl tanlash oynasi ochiladi. */
 export async function takePhoto(): Promise<Blob | null> {
@@ -11,8 +12,8 @@ export async function takePhoto(): Promise<Blob | null> {
   } catch (e) {
     const m = e instanceof Error ? e.message : String(e);
     if (/cancel/i.test(m)) return null;
-    if (/denied|permission/i.test(m)) throw new Error('Kameraga ruxsat berilmagan. Sozlamalar > Ilovalar > Mushuk va It Top > Ruxsatlar orqali yoqing.');
-    throw new Error('Kamerani ochib bo\'lmadi: ' + m);
+    if (/denied|permission/i.test(m)) throw new Error(tr('err.camDenied'));
+    throw new Error(tr('err.camFail', { err: m }));
   }
 }
 

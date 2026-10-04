@@ -6,11 +6,13 @@ import { ProfileForm } from './ProfileForm';
 import { useAuth } from '../lib/auth';
 import { useNav } from '../lib/nav';
 import { PAGE_SIZE, fetchLiked, fetchMyComments, fetchPosts, type FeedPost, type MyComment } from '../lib/posts';
-import { timeAgo } from '../lib/format';
 import { postTitle } from '../lib/types';
+import { timeAgo, useI18n, LANGS } from '../i18n';
+import { useTheme, type ThemePref } from '../lib/theme';
 
 /** Sahifalangan e'lonlar ro'yxati (Mening e'lonlarim / Sevimlilarim). */
 function PostList({ title, empty, load }: { title: string; empty: string; load: (me: string, from: number, size: number) => Promise<FeedPost[]> }) {
+  const { t } = useI18n();
   const { session } = useAuth();
   const me = session!.user.id;
   const nav = useNav();
@@ -38,17 +40,18 @@ function PostList({ title, empty, load }: { title: string; empty: string; load: 
         {posts === null && !err && <div className="center muted pad"><div className="spinner" /></div>}
         {posts?.length === 0 && <div className="empty">{empty}</div>}
         {posts?.map((p) => <PostRow key={p.id} post={p} onOpen={nav.openPost} />)}
-        {!busy && more && <button className="btn ghost block" onClick={() => void fetchPage(posts?.length ?? 0)}>Yana yuklash</button>}
+        {!busy && more && <button className="btn ghost block" onClick={() => void fetchPage(posts?.length ?? 0)}>{t('common.more')}</button>}
       </div>
     </div>
   );
 }
 
 const loadMine = (me: string, from: number, size: number) => fetchPosts(me, { userId: me, from, size });
-export const MyPosts = () => <PostList title="Mening e'lonlarim" empty="Siz hali e'lon qo'ymagansiz" load={loadMine} />;
-export const Favorites = () => <PostList title="Sevimlilarim" empty="Layk bosgan e'lonlaringiz shu yerda ko'rinadi" load={fetchLiked} />;
+export function MyPosts() { const { t } = useI18n(); return <PostList title={t('me.menuPosts')} empty={t('list.myPostsEmpty')} load={loadMine} />; }
+export function Favorites() { const { t } = useI18n(); return <PostList title={t('me.menuFavs')} empty={t('list.favsEmpty')} load={fetchLiked} />; }
 
 export function MyComments() {
+  const { t } = useI18n();
   const { session } = useAuth();
   const me = session!.user.id;
   const nav = useNav();
@@ -57,16 +60,16 @@ export function MyComments() {
   useEffect(() => { fetchMyComments(me).then(setItems).catch((e: unknown) => setErr(e instanceof Error ? e.message : String(e))); }, [me]);
   return (
     <div className="screen">
-      <Header title="Izohlarim" onBack={nav.pop} />
+      <Header title={t('me.menuComments')} onBack={nav.pop} />
       <div className="pad-x">
         {err && <div className="alert err">{err}</div>}
         {items === null && !err && <div className="center muted pad"><div className="spinner" /></div>}
-        {items?.length === 0 && <div className="empty">Siz hali izoh yozmagansiz</div>}
+        {items?.length === 0 && <div className="empty">{t('list.commentsEmpty')}</div>}
         {items?.map((c) => (
           <button key={c.id} className="row-card" onClick={() => nav.openPost(c.post_id)}>
             {c.post ? <Thumb url={c.post.image_url} className="row-img sm" alt="" /> : <span className="row-img sm" />}
             <div className="row-body">
-              <b className="row-title">{c.post ? postTitle(c.post) : 'O\'chirilgan e\'lon'}</b>
+              <b className="row-title">{c.post ? postTitle(c.post) : t('list.deletedPost')}</b>
               <div className="ctext">{c.text}</div>
               <div className="muted small">{timeAgo(c.created_at)}</div>
             </div>
@@ -78,31 +81,43 @@ export function MyComments() {
 }
 
 export function Settings() {
+  const { t, lang, setLang } = useI18n();
+  const { pref, setPref } = useTheme();
   const { profile, refreshProfile } = useAuth();
   const nav = useNav();
   if (!profile) return null;
+  const themes: { v: ThemePref; label: string }[] = [
+    { v: 'system', label: t('settings.themeSystem') }, { v: 'light', label: t('settings.themeLight') }, { v: 'dark', label: t('settings.themeDark') },
+  ];
   return (
     <div className="screen">
-      <Header title="Sozlamalar" onBack={nav.pop} />
-      <div className="pad-x"><ProfileForm profile={profile} onDone={() => { void refreshProfile(); nav.pop(); }} onCancel={nav.pop} /></div>
+      <Header title={t('settings.title')} onBack={nav.pop} />
+      <div className="pad-x">
+        <h4 className="set-title">{t('settings.language')}</h4>
+        <div className="lang-seg" role="group" aria-label={t('settings.language')}>
+          {LANGS.map((l) => <button key={l.code} className={lang === l.code ? 'on' : ''} onClick={() => setLang(l.code)}>{l.label}</button>)}
+        </div>
+        <h4 className="set-title">{t('settings.theme')}</h4>
+        <div className="lang-seg" role="group" aria-label={t('settings.theme')}>
+          {themes.map((x) => <button key={x.v} className={pref === x.v ? 'on' : ''} onClick={() => setPref(x.v)}>{x.label}</button>)}
+        </div>
+        <h4 className="set-title">{t('settings.profile')}</h4>
+        <ProfileForm profile={profile} onDone={() => { void refreshProfile(); nav.pop(); }} onCancel={nav.pop} />
+      </div>
     </div>
   );
 }
 
 export function Help() {
+  const { t } = useI18n();
   const nav = useNav();
   return (
     <div className="screen">
-      <Header title="Yordam va qo'llab-quvvatlash" onBack={nav.pop} />
+      <Header title={t('help.title')} onBack={nav.pop} />
       <div className="pad-x help">
-        <h3>Qanday e&apos;lon qo&apos;yiladi?</h3>
-        <p>Pastdagi yashil «+» tugmasini bosing, «Mushuk» yoki «It»ni tanlang va suratga oling. Rasm olingan joyning GPS joylashuvi avtomatik saqlanadi. Sarlavha va izoh yozib, «E&apos;lon qilish»ni bosing.</p>
-        <h3>Joylashuv aniqlanmasa nima qilish kerak?</h3>
-        <p>Telefonda GPS (joylashuv) yoqilganini va ilovaga joylashuv ruxsati berilganini tekshiring: Sozlamalar → Ilovalar → Mushuk va Itlarni Top → Ruxsatlar. Ochiq joyda qayta urinib ko&apos;ring.</p>
-        <h3>Nomaqbul e&apos;lon yoki spam</h3>
-        <p>Qoidabuzar e&apos;lon yoki izohni administrator o&apos;chiradi yoki foydalanuvchini bloklaydi. Shikoyat uchun e&apos;lon sarlavhasi va muallifini yozib administratorga murojaat qiling.</p>
-        <h3>Mening e&apos;lonimni qanday o&apos;chiraman?</h3>
-        <p>E&apos;lonni oching va yuqori o&apos;ngdagi axlat qutisi belgisini bosing.</p>
+        {([1, 2, 3, 4] as const).map((i) => (
+          <div key={i}><h3>{t(`help.q${i}`)}</h3><p>{t(`help.a${i}`)}</p></div>
+        ))}
       </div>
     </div>
   );
