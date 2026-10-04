@@ -2,26 +2,32 @@ import { useState } from 'react';
 import { Avatar } from './Avatar';
 import { CommentsSheet } from './CommentsSheet';
 import { MapModal } from './MapModal';
+import { Icon } from './Icons';
+import { TypeBadge } from './Chips';
 import { deletePost, setLike, type FeedPost } from '../lib/posts';
 import { fmtCoords, mapsUrl } from '../lib/geo';
+import { useMyLocation } from '../lib/location';
 import { timeAgo } from '../lib/format';
 import { openExternal } from '../lib/open';
-import { ANIMAL } from '../lib/types';
+import { postTitle } from '../lib/types';
 
 interface Props {
   post: FeedPost;
   me: string;
+  onOpen: (id: string) => void;
   onChange: (p: FeedPost) => void;
   onDeleted: (id: string) => void;
 }
 
-export function PostCard({ post, me, onChange, onDeleted }: Props) {
+/** Lenta kartasi: rasm tagida lokatsiya, layk va izoh. Rasm/sarlavhani bosish tafsilotlarni ochadi. */
+export function PostCard({ post, me, onOpen, onChange, onDeleted }: Props) {
+  const { distanceTo } = useMyLocation();
   const [showMap, setShowMap] = useState(false);
   const [showComments, setShowComments] = useState(false);
   const [busy, setBusy] = useState(false);
   const likes = post.likes[0]?.count ?? 0;
   const comments = post.comments[0]?.count ?? 0;
-  const a = ANIMAL[post.animal_type];
+  const dist = distanceTo(post.latitude, post.longitude);
 
   async function toggleLike() {
     if (busy) return;
@@ -46,21 +52,26 @@ export function PostCard({ post, me, onChange, onDeleted }: Props) {
           <b>{post.author?.full_name ?? 'Foydalanuvchi'}</b>
           <div className="muted small">{timeAgo(post.created_at)}</div>
         </div>
-        <span className="chip">{a.icon} {a.label}</span>
-        {post.user_id === me && <button className="link bad" onClick={() => void remove()}>O&apos;chirish</button>}
+        <TypeBadge type={post.animal_type} />
+        {post.user_id === me && <button className="icon-btn danger" onClick={() => void remove()} aria-label="O'chirish"><Icon name="trash" size={19} /></button>}
       </header>
-      <img className="post-img" src={post.image_url} alt={a.label} loading="lazy" />
+      <button className="img-btn" onClick={() => onOpen(post.id)} aria-label="Tafsilotlar">
+        <img className="post-img" src={post.image_url} alt={postTitle(post)} loading="lazy" />
+      </button>
       {post.status === 'blocked' && <div className="alert err tight">Bu e&apos;lon administrator tomonidan bloklangan, boshqalarga ko&apos;rinmaydi.</div>}
+      <div className="post-info">
+        <b className="post-title">{postTitle(post)}</b>
+        {post.caption && <p className="caption">{post.caption}</p>}
+      </div>
       {/* Lokatsiya rasm tagida avtomatik ko'rsatiladi */}
       <div className="loc">
-        <div className="loc-text">📍 {post.address ?? 'Manzil aniqlanmagan'}<div className="muted small">{fmtCoords(post.latitude, post.longitude)}</div></div>
-        <button className="btn small" onClick={() => setShowMap(true)}>🗺 Xarita</button>
+        <div className="loc-text"><Icon name="pin" size={16} /> {post.address ?? 'Manzil aniqlanmagan'}{dist ? ` · ${dist}` : ''}<div className="muted small">{fmtCoords(post.latitude, post.longitude)}</div></div>
+        <button className="btn small" onClick={() => setShowMap(true)}>Xarita</button>
         <button className="btn small ghost" onClick={() => void openExternal(mapsUrl(post.latitude, post.longitude))}>Google Maps</button>
       </div>
-      {post.caption && <p className="caption">{post.caption}</p>}
       <div className="actions">
-        <button className={`act ${post.liked ? 'liked' : ''}`} onClick={() => void toggleLike()} aria-pressed={post.liked}>{post.liked ? '❤️' : '🤍'} {likes}</button>
-        <button className="act" onClick={() => setShowComments(true)}>💬 {comments}</button>
+        <button className={`act like ${post.liked ? 'on' : ''}`} onClick={() => void toggleLike()} aria-pressed={post.liked}><Icon name="heart" size={18} fill={post.liked} /> {likes}</button>
+        <button className="act comment" onClick={() => setShowComments(true)}><Icon name="comment" size={18} /> {comments}</button>
       </div>
       {showMap && <MapModal lat={post.latitude} lng={post.longitude} address={post.address} onClose={() => setShowMap(false)} />}
       {showComments && (

@@ -24,6 +24,7 @@ export interface Post {
   id: string;
   user_id: string;
   animal_type: AnimalType;
+  title: string | null;
   image_url: string;
   latitude: number;
   longitude: number;
@@ -43,7 +44,22 @@ export interface CommentRow {
   created_at: string;
 }
 
-export const ANIMAL: Record<AnimalType, { icon: string; label: string }> = {
-  cat: { icon: '🐱', label: 'Mushuk' },
-  dog: { icon: '🐶', label: 'It' },
+export interface NotificationRow {
+  id: string;
+  user_id: string;
+  actor_id: string;
+  type: 'like' | 'comment';
+  post_id: string;
+  body: string | null;
+  read: boolean;
+  created_at: string;
+}
+
+export const ANIMAL: Record<AnimalType, { icon: string; label: string; plural: string }> = {
+  cat: { icon: '🐱', label: 'Mushuk', plural: 'Mushuklar' },
+  dog: { icon: '🐶', label: 'It', plural: 'Itlar' },
 };
+
+export function postTitle(p: Pick<Post, 'title' | 'animal_type'>): string {
+  return p.title?.trim() || ANIMAL[p.animal_type].label;
+}

@@ -1,7 +1,7 @@
 <?xml version='1.0' encoding='utf-8'?>
 <resources>
-    <string name="app_name">Mushuk va It Top</string>
-    <string name="title_activity_main">Mushuk va It Top</string>
+    <string name="app_name">Mushuk va Itlarni Top</string>
+    <string name="title_activity_main">Mushuk va Itlarni Top</string>
     <string name="package_name">uz.mushukit.top</string>
     <string name="custom_url_scheme">uz.mushukit.top</string>
 </resources>

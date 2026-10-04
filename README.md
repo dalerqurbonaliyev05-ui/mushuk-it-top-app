@@ -1,14 +1,19 @@
-# Mushuk va It Top (mobil ilova)
+# Mushuk va Itlarni Top (mobil ilova)
 
 Ko'chada uchragan mushuk va itlarni suratga olib, GPS joylashuvi bilan e'lon qilish. **React + Vite + TypeScript + Capacitor** (Android APK), backend: **Supabase** (Auth/Google, Postgres + RLS, Storage).
 Administrator paneli: `Biotechelectirical` repodagi `yangiloyiha1/mushuk-it-admin/`.
 
 ## Imkoniyatlar
-- Google orqali kirish (Supabase Auth); birinchi kirishda ism-sharif va qo'shimcha ma'lumotlarni to'ldirish
-- «Mushuk» / «It» tugmasi → kamera → rasm olingan zahoti **GPS joylashuvi avtomatik** olinadi va saqlanadi (manzil OpenStreetMap Nominatim orqali)
-- Lenta: barcha foydalanuvchilar postlari, **rasm tagida joylashuv**; layk va izoh
-- Joylashuvni ilova ichidagi xaritada (Leaflet/OSM) yoki Google Maps'da ochish
-- Bloklangan foydalanuvchi uchun alohida ekran; admin bloklagan postlar boshqalarga ko'rinmaydi
+- **Kirish:** Google orqali (Supabase Auth); birinchi kirishda ism-sharif va qo'shimcha ma'lumotlarni to'ldirish
+- **Bosh sahifa:** qidiruv, «Mushuk»/«It» plitkalari, «Rasmga olish» kartasi, **yaqin atrofdagi e'lonlar** (masofa bo'yicha, «850 m» ko'rinishida), «Barchasi» (to'liq lenta: layk, izoh, lokatsiya)
+- **Yangi e'lon:** «Mushuk»/«It» tugmasi → kamera → rasm olingan zahoti **GPS avtomatik** olinadi va saqlanadi (manzil OSM Nominatim orqali) → sarlavha/izoh → yuborish
+- **Xarita:** rasmli pinlar (mushuk/it rangida), tur filtri, qidiruv, «men turgan joy», tanlangan e'lon kartasi
+- **E'lon tafsilotlari:** sarlavha, lokatsiya (rasm tagida), masofa, mini xarita, Google Maps'da ochish, layk va izohlar
+- **Bildirishnomalar:** e'loningizga layk/izoh qoldirilganda (baza triggerlari), o'qilmaganlar belgisi
+- **Profil:** statistika (e'lonlar, olingan layklar, yozgan izohlar), mening e'lonlarim, sevimlilarim (layk bosganlarim), izohlarim, sozlamalar, yordam
+- Bloklangan foydalanuvchi uchun alohida ekran; admin bloklagan e'lonlar boshqalarga ko'rinmaydi
+
+Hozircha yo'q: Instagram bilan kirish (Supabase'da Instagram provider yo'q), bir e'londa bir nechta rasm, foydalanuvchilar o'rtasida xabar yozishish (chat).
 
 ## Sozlash (bir marta)
 1. **Supabase loyihasi** `mushuk-it-top-app` (`mjtdilcbwbqpibrooamz`): sxema (`supabase/schema.sql`) qo'llangan, faqat ikki admin funksiyasi (bloklash/o'chirish) SQL Editor'da qo'lda ishga tushirilishi kerak: [`supabase/admin_block_delete.sql`](supabase/admin_block_delete.sql). Yangi loyiha uchun avval `schema.sql`, so'ng shu faylni ishga tushiring. U `profiles`, `posts`, `likes`, `comments`, `admins` jadvallarini, RLS qoidalarini (hamma o'qiydi, faqat egasi o'chiradi, admin hammasini boshqaradi), `animal-photos` bucket'ini va admin funksiyalarini yaratadi.
@@ -34,4 +39,6 @@ cd android && ./gradlew assembleDebug   # JDK 17 + Android SDK kerak
 `CAMERA`, `ACCESS_FINE_LOCATION`, `ACCESS_COARSE_LOCATION` (AndroidManifest.xml). Joylashuv ruxsati berilmasa, e'lon yuborib bo'lmaydi (joylashuv majburiy).
 
 ## Tuzilishi
-`src/lib/` (Supabase mijozi, auth, kamera, GPS, rasm siqish, postlar API), `src/components/` (PostCard, izohlar, xarita), `src/pages/` (Login, ProfileForm, Feed, NewPost, ProfilePage), `supabase/schema.sql`.
+`src/lib/` (Supabase mijozi, auth, joylashuv, navigatsiya, kamera, rasm siqish, postlar API), `src/components/` (ikonkalar, PostRow/PostCard, xarita), `src/pages/` (Home, MapPage, PostDetail, NewPost, Notifications, ProfilePage, ...), `assets/logo.svg` (logo; Android ikonkalari shundan yaratilgan), `supabase/`.
+
+Sinov: `npm run build:test`, so'ng `cd tests && npm install && npm test` (haqiqiy Chromium, Supabase tarmoq darajasida taqlid qilinadi).
