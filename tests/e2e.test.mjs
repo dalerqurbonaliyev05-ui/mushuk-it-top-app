@@ -16,7 +16,8 @@ const SB = "https://testproj.supabase.co";
 const ME = "u-me";
 const SHOTS = process.env.SHOTS;
 
-let server, base, browser, JPEG;
+let server, base, browser, JPEG, DOG_JPEG, TILES;
+const DOG_IDS = new Set(["far", "mid"]);
 before(async () => {
   server = http.createServer((req, res) => {
     const u = new URL(req.url, "http://x");
@@ -28,8 +29,28 @@ before(async () => {
   base = `http://127.0.0.1:${server.address().port}`;
   browser = await chromium.launch({ executablePath: CHROME, args: ["--no-sandbox"] });
   const pg = await browser.newPage();
-  const b64 = await pg.evaluate(() => { const c = document.createElement("canvas"); c.width = 400; c.height = 300; const g = c.getContext("2d"); g.fillStyle = "#c84"; g.fillRect(0, 0, 400, 300); g.fillStyle = "#fff"; g.fillRect(50, 50, 120, 90); return c.toDataURL("image/jpeg", 0.9).split(",")[1]; });
-  JPEG = Buffer.from(b64, "base64"); await pg.close();
+  // Demo rasmlar: pastel fon + katta emoji (jonli rasm o'rniga); plitkalar: oddiy xarita ko'rinishi
+  const gen = await pg.evaluate(() => {
+    const photo = (emoji, a, b) => {
+      const c = document.createElement("canvas"); c.width = 640; c.height = 480; const g = c.getContext("2d");
+      const gr = g.createLinearGradient(0, 0, 640, 480); gr.addColorStop(0, a); gr.addColorStop(1, b); g.fillStyle = gr; g.fillRect(0, 0, 640, 480);
+      g.fillStyle = "rgba(255,255,255,.35)"; g.beginPath(); g.ellipse(320, 470, 330, 90, 0, 0, Math.PI * 2); g.fill();
+      g.font = "300px serif"; g.textAlign = "center"; g.textBaseline = "middle"; g.fillText(emoji, 320, 235);
+      return c.toDataURL("image/jpeg", 0.9).split(",")[1];
+    };
+    const tile = (k) => {
+      const c = document.createElement("canvas"); c.width = 256; c.height = 256; const g = c.getContext("2d");
+      g.fillStyle = "#eef2e6"; g.fillRect(0, 0, 256, 256);
+      g.fillStyle = "#d4e8c2"; g.fillRect(20 + k * 25, 150, 90, 70); g.fillStyle = "#cfe3f5"; g.fillRect(150, 30 + k * 20, 70, 50);
+      g.strokeStyle = "#ffffff"; g.lineWidth = 12; g.beginPath(); g.moveTo(0, 90 + k * 12); g.lineTo(256, 110 - k * 8); g.moveTo(130 + k * 10, 0); g.lineTo(120, 256); g.stroke();
+      g.strokeStyle = "#f6d98f"; g.lineWidth = 5; g.beginPath(); g.moveTo(0, 200); g.lineTo(256, 190 + k * 6); g.stroke();
+      g.strokeStyle = "#d9dccf"; g.lineWidth = 1; for (let i = 32; i < 256; i += 64) { g.beginPath(); g.moveTo(i, 0); g.lineTo(i, 256); g.moveTo(0, i); g.lineTo(256, i); g.stroke(); }
+      return c.toDataURL("image/png").split(",")[1];
+    };
+    return { cat: photo("🐱", "#ffe3d3", "#ffc9a8"), dog: photo("🐶", "#d9ecff", "#b7d8ff"), tiles: [0, 1, 2, 3].map(tile) };
+  });
+  JPEG = Buffer.from(gen.cat, "base64"); DOG_JPEG = Buffer.from(gen.dog, "base64"); TILES = gen.tiles.map((t) => Buffer.from(t, "base64"));
+  await pg.close();
   if (SHOTS) fs.mkdirSync(SHOTS, { recursive: true });
 });
 after(async () => { await browser?.close(); server?.close(); });
@@ -61,20 +82,20 @@ function seed({ onboarded = true, blocked = false } = {}) {
 const postWithJoin = (db, p) => ({ ...p, posts: p });
 
 async function openApp(db, opts = {}) {
-  const { geo = true, w = 400, h = 800, scheme = "light" } = opts;
-  const ctx = await browser.newContext({ colorScheme: scheme, locale: "en-US", geolocation: { latitude: 41.3111, longitude: 69.2797, accuracy: 12 }, permissions: geo ? ["geolocation"] : [], viewport: { width: w, height: h } });
+  const { geo = true, w = 400, h = 800, scheme = "light", dpr = 1 } = opts;
+  const ctx = await browser.newContext({ colorScheme: scheme, deviceScaleFactor: dpr, locale: "en-US", geolocation: { latitude: 41.3111, longitude: 69.2797, accuracy: 12 }, permissions: geo ? ["geolocation"] : [], viewport: { width: w, height: h } });
   const page = await ctx.newPage();
   const errors = [];
   page.on("pageerror", (e) => errors.push(e.message));
   page.on("console", (m) => { if (m.type() === "error" && !/Failed to load resource|nominatim|tile/i.test(m.text())) errors.push(m.text()); });
   await page.route("https://nominatim.openstreetmap.org/**", (r) => r.fulfill({ contentType: "application/json", headers: { "access-control-allow-origin": "*" }, body: JSON.stringify({ address: { road: "Navoiy ko'chasi", suburb: "Mirzo Ulug'bek", city: "Toshkent" } }) }));
-  await page.route("https://tile.openstreetmap.org/**", (r) => r.fulfill({ status: 200, contentType: "image/png", body: Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNkYPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==", "base64") }));
+  await page.route("https://tile.openstreetmap.org/**", (r) => { const m = r.request().url().match(/\/(\d+)\/(\d+)\/(\d+)\.png/); const k = m ? (Number(m[2]) + Number(m[3])) % 4 : 0; return r.fulfill({ status: 200, contentType: "image/png", body: TILES[k] }); });
   await page.route(`${SB}/**`, async (route) => {
     const req = route.request(), u = new URL(req.url()), m = req.method();
     const cors = { "access-control-allow-origin": "*", "access-control-allow-headers": "*", "access-control-allow-methods": "*", "access-control-expose-headers": "*" };
     const json = (body, status = 200) => route.fulfill({ status, headers: cors, contentType: "application/json", body: JSON.stringify(body) });
     if (m === "OPTIONS") return route.fulfill({ status: 204, headers: cors });
-    if (u.pathname.startsWith("/storage/v1/object/public/")) return route.fulfill({ status: 200, headers: cors, contentType: "image/jpeg", body: JPEG });
+    if (u.pathname.startsWith("/storage/v1/object/public/")) { const id = u.pathname.split("/").pop().replace(/(_t)?\.jpg$/, ""); return route.fulfill({ status: 200, headers: cors, contentType: "image/jpeg", body: DOG_IDS.has(id) ? DOG_JPEG : JPEG }); }
     const t = u.pathname.split("/").pop();
     const sp = u.searchParams;
     db.calls.push({ m, t, path: u.pathname, search: u.search, body: req.postData() });
@@ -461,4 +482,42 @@ test("qorong'u rejim: tizim sozlamasiga ergashadi, qo'lda yorug'/qorong'u tanlan
   await shot(b.page, "11-map-dark");
   assert.deepEqual(b.errors, []);
   await b.ctx.close();
+});
+
+// Qo'llanma uchun ekran rasmlari (faqat GUIDE_SHOTS=papka bilan): uchala tilda, 2x aniqlikda.
+test("qo'llanma ekran rasmlari", { skip: !process.env.GUIDE_SHOTS }, async () => {
+  const out = process.env.GUIDE_SHOTS; fs.mkdirSync(out, { recursive: true });
+  for (const lang of ["uz", "ru", "en"]) {
+    const snap = (page, name) => page.screenshot({ path: path.join(out, `${lang}-${name}.png`) });
+    // kirish ekrani
+    { const ctx = await browser.newContext({ viewport: { width: 390, height: 800 }, deviceScaleFactor: 2, locale: "en-US" }); const page = await ctx.newPage();
+      await page.addInitScript((l) => { try { localStorage.setItem("mi_lang", l); } catch { /* */ } }, lang);
+      await page.goto(base); await page.locator(".btn.google").waitFor(); await snap(page, "login"); await ctx.close(); }
+    const db = seed();
+    db.profiles[0].full_name = "Aziz Karimov"; db.public_profiles[0].full_name = "Aziz Karimov"; db.profiles[0].bio = null;
+    const { page, ctx } = await openApp(db, { lang, w: 390, h: 800, dpr: 2 });
+    await page.locator(".row-card").first().waitFor();
+    await page.waitForFunction(() => /\d+ (m|м)|\d(\.\d)? (km|км)/.test(document.querySelector(".row-card")?.textContent || ""));
+    await page.waitForTimeout(400); await snap(page, "home");
+    await tab(page, "").nth(1).click();
+    await page.waitForFunction(() => document.querySelectorAll(".photo-pin").length === 4);
+    await page.waitForTimeout(900); await snap(page, "map");
+    await tab(page, "").nth(0).click();
+    await page.locator(".row-card").first().click();
+    await page.locator(".detail-img").waitFor(); await page.waitForTimeout(500); await snap(page, "detail");
+    await page.locator(".hdr .icon-btn").first().click();
+    await page.locator(".tabbar .add").click();
+    await page.waitForTimeout(300); await snap(page, "new");
+    page.once("filechooser", (fc) => fc.setFiles({ name: "cat.jpg", mimeType: "image/jpeg", buffer: JPEG }));
+    await page.locator(".tile.cat").click();
+    await page.locator(".loc.solo").waitFor(); await page.fill("input[maxlength='80']", lang === "ru" ? "Белая кошка" : lang === "en" ? "White cat" : "Oq mushuk"); await page.waitForTimeout(300); await snap(page, "confirm");
+    await tab(page, "").nth(3).click();
+    await page.locator(".notif").first().waitFor(); await page.waitForTimeout(300); await snap(page, "notifs");
+    await tab(page, "").nth(4).click();
+    await page.locator(".stats").waitFor(); await page.waitForTimeout(500); await snap(page, "profile");
+    await ctx.close();
+  }
+  { const db = seed(); const { page, ctx } = await openApp(db, { lang: "uz", w: 390, h: 800, dpr: 2, scheme: "dark" });
+    await page.locator(".row-card").first().waitFor(); await page.waitForFunction(() => /\d+ m|\d(\.\d)? km/.test(document.querySelector(".row-card")?.textContent || "")); await page.waitForTimeout(400);
+    await page.screenshot({ path: path.join(out, "uz-home-dark.png") }); await ctx.close(); }
 });
