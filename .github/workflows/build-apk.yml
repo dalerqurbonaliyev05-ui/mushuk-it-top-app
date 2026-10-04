@@ -3,7 +3,7 @@
 #   main'ga push -> APK GitHub Release'ga ham yuklanadi (Releases bo'limidan yuklab olinadi).
 #
 # Sozlash (Settings > Secrets and variables > Actions > Variables):
-#   SUPABASE_URL, SUPABASE_ANON_KEY: Supabase loyihangiz (publishable/anon kalit; service_role EMAS).
+#   SUPABASE_URL, SUPABASE_ANON_KEY: ixtiyoriy; berilmasa src/lib/config.ts dagi standart loyiha (mushuk-it-top-app) ishlatiladi.
 name: Build APK
 
 on:
@@ -41,12 +41,6 @@ jobs:
           java-version: '17'
 
       - uses: gradle/actions/setup-gradle@v4
-
-      - name: Supabase sozlamasini tekshirish
-        run: |
-          if [ -z "$VITE_SUPABASE_URL" ] || [ -z "$VITE_SUPABASE_ANON_KEY" ]; then
-            echo "::warning::SUPABASE_URL / SUPABASE_ANON_KEY (Actions Variables) berilmagan: APK 'Supabase sozlanmagan' ekranini ko'rsatadi."
-          fi
 
       - name: Bog'liqliklarni o'rnatish
         run: npm ci

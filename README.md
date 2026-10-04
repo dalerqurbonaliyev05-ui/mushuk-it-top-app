@@ -11,11 +11,11 @@ Administrator paneli: `Biotechelectirical` repodagi `yangiloyiha1/mushuk-it-admi
 - Bloklangan foydalanuvchi uchun alohida ekran; admin bloklagan postlar boshqalarga ko'rinmaydi
 
 ## Sozlash (bir marta)
-1. **Supabase loyihasi** (alohida loyiha tavsiya etiladi): SQL Editor'da [`supabase/schema.sql`](supabase/schema.sql) ni ishga tushiring. U `profiles`, `posts`, `likes`, `comments`, `admins` jadvallarini, RLS qoidalarini (hamma o'qiydi, faqat egasi o'chiradi, admin hammasini boshqaradi), `animal-photos` bucket'ini va admin funksiyalarini yaratadi.
+1. **Supabase loyihasi** `mushuk-it-top-app` (`mjtdilcbwbqpibrooamz`): sxema (`supabase/schema.sql`) qo'llangan, faqat ikki admin funksiyasi (bloklash/o'chirish) SQL Editor'da qo'lda ishga tushirilishi kerak: [`supabase/admin_block_delete.sql`](supabase/admin_block_delete.sql). Yangi loyiha uchun avval `schema.sql`, so'ng shu faylni ishga tushiring. U `profiles`, `posts`, `likes`, `comments`, `admins` jadvallarini, RLS qoidalarini (hamma o'qiydi, faqat egasi o'chiradi, admin hammasini boshqaradi), `animal-photos` bucket'ini va admin funksiyalarini yaratadi.
 2. **Google kirish**: Google Cloud Console'da OAuth Client (Web) yarating (Authorized redirect URI: `https://<loyiha>.supabase.co/auth/v1/callback`). Supabase > Authentication > Providers > Google'ga Client ID/Secret'ni kiriting.
 3. Supabase > Authentication > URL Configuration > **Redirect URLs**'ga qo'shing: `uz.mushukit.top://auth/callback` (APK) va admin paneli manzili.
    Android'da kirish tizim brauzeri + shu custom-scheme orqali ishlaydi, shuning uchun har bir build'dagi (debug) imzo kaliti (SHA-1) Google tomonda ro'yxatdan o'tkazilishi **shart emas**.
-4. **GitHub Actions Variables** (Settings > Secrets and variables > Actions > Variables): `SUPABASE_URL`, `SUPABASE_ANON_KEY` (publishable/anon kalit).
+4. Supabase URL va publishable kalit `src/lib/config.ts` da standart qiymat sifatida yozilgan (loyiha `mjtdilcbwbqpibrooamz`), shuning uchun APK qo'shimcha sozlamasiz ishlaydi. Boshqa loyiha uchun GitHub Actions Variables'ga `SUPABASE_URL`, `SUPABASE_ANON_KEY` bering.
 5. Admin tayinlash: `insert into public.admins (user_id) select id from auth.users where email = 'sizning@gmail.com';`
 
 ## APK
